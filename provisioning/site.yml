@@ -1,0 +1,68 @@
+---
+# this jets gets python working so the rest of the plays don't barf
+- hosts: all
+  become: true
+  become_method: sudo
+  gather_facts: false
+  pre_tasks:
+    - name: 'install python2 - required for ansible to work fully'
+      raw: sudo apt-get -y install python-simplejson
+
+# install java and tomcat
+# probably not right for anything other than default-jdk, should just go find an existing role that's smarter
+- hosts: all
+  become: true
+  become_method: sudo
+  gather_facts: true
+  vars:
+    jdk_package: default-jdk
+    tomcat_version: tomcat8
+  tasks:
+    - name: update apt cache
+      apt: update_cache=yes
+
+    # jdk
+    - name: 'install jdk {{ jdk_package }}'
+      apt: name={{ item }} state=present
+      with_items:
+        - "{{ jdk_package }}"
+
+    #  tomcat
+    - name: 'install tomcat : {{ tomcat_version }}'
+      apt: name={{ item }} state=present
+      with_items:
+        - "{{ tomcat_version }}"
+        - "{{ tomcat_version }}-admin"
+        - "{{ tomcat_version }}-docs"
+        - "{{ tomcat_version }}-examples"
+
+    - name: Set JAVA_HOME
+      lineinfile: dest=/etc/environment state=present regexp='^JAVA_HOME' line='JAVA_HOME=/usr/lib/jvm/default-java'
+
+    - name: Set CATALINA_HOME
+      lineinfile: dest=/etc/environment state=present regexp='^CATALINA_HOME' line='CATALINA_HOME=/var/lib/{{tomcat_version}}'
+
+#install openqm
+- hosts: all
+  become: true
+  become_method: sudo
+  gather_facts: true
+  vars:
+    qm_version: qml64_3-4-9
+  tasks:
+    - name: download openqm
+      wget: url="http://downloads.openqm.com/downloads/{{ qm_version }}"
+
+    # jdk
+    - name:
+      command: "./{{ qm_version}} -silent"
+
+
+# because I always forget to do this until I've tried locating something 100 times...
+- hosts: all
+  become: true
+  become_method: sudo
+  gather_facts: true
+  tasks:
+    - name: 'update locate database'
+      raw: sudo updatedb

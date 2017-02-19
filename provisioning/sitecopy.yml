@@ -1,0 +1,24 @@
+---
+- hosts: all
+  become: true
+  become_method: sudo
+  gather_facts: false
+  vars:
+    jdk_package: default-jdk
+    tomcat_version: 8
+  pre_tasks:
+    - name: 'install python2'
+      raw: sudo apt-get -y install python-simplejson
+  tasks:
+    - name: update apt cache
+      apt: update_cache=yes
+
+    # jdk and tomcat
+    - name: build essentials
+      apt: name={{ item }} state=present
+      with_items:
+        - "{{ jdk_package }}"
+        - tomcat{{ tomcat_version}}
+        - tomcat{{ tomcat_version}}-admin
+        - tomcat{{ tomcat_version}}-docs
+        - tomcat{{ tomcat_version}}-examples
